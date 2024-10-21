@@ -1,0 +1,12 @@
+2024-10-21 01:07:10,112 - INFO - Clave generada exitosamente y guardada en el archivo: clave.key
+2024-10-21 01:07:10,119 - ERROR - El archivo c no existe.
+2024-10-21 01:07:30,831 - INFO - El usuario ha salido del programa.
+2024-10-21 01:10:38,743 - ERROR - El archivo c no existe.
+2024-10-21 01:11:07,631 - ERROR - El archivo c no existe.
+2024-10-21 01:11:09,391 - INFO - El usuario ha salido del programa.
+2024-10-21 01:11:59,540 - INFO - La llave se cargo exitosamente
+2024-10-21 01:11:59,564 - INFO - El archivo C:\Users\user\Documents\portada.docx ha sido cifrado exitosamente
+2024-10-21 01:12:22,853 - INFO - Clave generada exitosamente y guardada en el archivo: clave.key
+2024-10-21 01:12:22,864 - INFO - La llave se cargo exitosamente
+2024-10-21 01:12:22,876 - ERROR - Error al descifrar el archivo: 
+2024-10-21 01:12:25,780 - INFO - El usuario ha salido del programa.
