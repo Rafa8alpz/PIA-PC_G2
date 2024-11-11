@@ -1,6 +1,5 @@
 import socket
 
-
 class InvalidIPAddressError(Exception):
     """Custom exception for invalid IP addresses."""
     pass
@@ -46,7 +45,7 @@ def scan_ports(ip_address, start_port, end_port):
     :return: Dictionary of port states
     """
     try:
-        # Direccion IP valida
+        # Validando la dirección IP.
         validate_ip_address(ip_address)
 
         print(f"Scanning ports from {start_port} to {end_port} on {ip_address}...")
@@ -64,6 +63,20 @@ def scan_ports(ip_address, start_port, end_port):
         print(f"An unexpected error occurred: {e}")
 
 
+def save_report(report, filename="port_scan_report.txt"):
+    """
+    Saves the port scan report to a file.
+
+    :param report: The port scan results
+    :param filename: The name of the file to save the report
+    :return: None
+    """
+    with open(filename, 'w') as file:
+        for port, state in report.items():
+            file.write(f"Port {port}: {state}\n")
+    print(f"Report saved to {filename}")
+
+
 def main():
     """
     Main function to handle user input and initiate the network scan.
@@ -77,13 +90,28 @@ def main():
 
         port_states = scan_ports(ip_address, start_port, end_port)
 
-        for port, state in port_states.items():
-            print(f"Port {port}: {state}")
+        # Guarda los resultados en un archivo en lugar de imprimirlos en la terminal.
+        if port_states:
+            save_report(port_states)
 
     except ValueError:
         print("Invalid input. Please enter a valid number for port ranges.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+def get_help():
+    """
+    Prints help information about how to use this script.
+
+    :return: None
+    """
+    print("""
+    This script scans a range of ports on a given IP address to check if they are open or closed.
+
+    Usage:
+        python port_scanner.py
+    """)
+
 
 
 if __name__ == "__main__":
