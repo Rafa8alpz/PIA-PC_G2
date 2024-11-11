@@ -48,32 +48,50 @@ def get_ip_abuse_data(ip_address):
     except requests.exceptions.RequestException as e:
         raise APIError(f"API request failed: {e}")
 
+def save_report(ip_address, abuse_data, filename="report.txt"):
+    """
+    Save the abuse data report to a specified file.
+
+    :param ip_address: The IP address checked
+    :param abuse_data: Data containing IP abuse information
+    :param filename: File to save the report
+    :return: None
+    """
+    try:
+        with open(filename, 'w') as file:
+            confidence_score = abuse_data['data']['abuseConfidenceScore']
+            last_reported = abuse_data['data']['lastReportedAt']
+            file.write(f"IP Address: {ip_address}\n")
+            file.write(f"Abuse Confidence Score: {confidence_score}\n")
+            file.write(f"Last Reported: {last_reported}\n")
+
+            if confidence_score > 0:
+                file.write(f"Warning: IP {ip_address} is potentially malicious.\n")
+            else:
+                file.write(f"IP {ip_address} appears to be clean.\n")
+
+        print(f"Report saved in {filename}")
+
+    except IOError as e:
+        print(f"Error saving report: {e}")
+
 def check_ip_abuse(ip_address):
     """
     Main function to validate the IP address and retrieve its abuse data.
+    Saves the data to a report file instead of printing to terminal.
 
     :param ip_address: The IP address to check
     :return: None
     """
     try:
-        # Validate IP address format
+        # Validar el formato de la dirección IP
         validate_ip(ip_address)
 
-        # Fetch IP abuse data
+        # Obtener datos de abuso de IP
         abuse_data = get_ip_abuse_data(ip_address)
 
-        # Check abuse confidence score and print results
-        confidence_score = abuse_data['data']['abuseConfidenceScore']
-        last_reported = abuse_data['data']['lastReportedAt']
-
-        print(f"IP Address: {ip_address}")
-        print(f"Abuse Confidence Score: {confidence_score}")
-        print(f"Last Reported: {last_reported}")
-
-        if confidence_score > 0:
-            print(f"Warning: IP {ip_address} is potentially malicious.")
-        else:
-            print(f"IP {ip_address} appears to be clean.")
+        # Guardar el informe en un archivo
+        save_report(ip_address, abuse_data, filename="ip_abuse_report.txt")
 
     except InvalidIPError as ip_err:
         print(f"Error: {ip_err}")
@@ -81,6 +99,22 @@ def check_ip_abuse(ip_address):
         print(f"Error: {api_err}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+# Get-Help: Verificar el Script de Reporte de Check Abuse IP
+# SYNOPSIS
+#   Este script verifica una dirección IP en la API de la base de datos de abuso de IP y guarda un informe en un archivo de texto.
+#
+# SYNTAX
+#   Ejecuta el script ingresando una dirección IP cuando se te solicite.
+#
+# PARAMETERS
+#  ip_address : str - Dirección IP que se verificará por abuso.
+#
+# EXAMPLE
+#   Ingresa una dirección IP, por ejemplo, 192.168.0.1, para recuperar y guardar el informe de abuso en 'ip_abuse_report.txt'.
+#
+# OUTPUT
+#   Un archivo de texto llamado 'ip_abuse_report.txt' que contiene detalles sobre el abuso de IP.
 
 if __name__ == '__main__':
     ip_address = input("Enter the IP address to check: ")
