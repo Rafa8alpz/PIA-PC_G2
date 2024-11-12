@@ -1,8 +1,9 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 function Remove-TempFiles {
     param (
-        [string]$DirectoryPath
+        [string]$DirectoryPath,
+        [string]$TempFilesReportPath = "TempFilesReport.csv"
     )
 
     if (-Not (Test-Path -Path $DirectoryPath)) {
@@ -12,6 +13,15 @@ function Remove-TempFiles {
 
     $tempFiles = Get-ChildItem -Path $DirectoryPath -Recurse -Filter "*.tmp" -ErrorAction SilentlyContinue
     if ($tempFiles) {
+        $report = $tempFiles | Select-Object FullName, Name, Length, LastWriteTime
+        
+        try {
+            $report | Export-Csv -Path $TempFilesReportPath -NoTypeInformation -Append -Encoding UTF8
+            Write-Output "Reporte de archivos temporales eliminados generado en: $TempFilesReportPath"
+        } catch {
+            Write-Error "No se pudo generar el reporte de archivos temporales: $_"
+        }
+
         $tempFiles | ForEach-Object {
             Remove-Item -Path $_.FullName -Force -Verbose -ErrorAction SilentlyContinue
         }
@@ -24,7 +34,8 @@ function Remove-TempFiles {
 function Remove-OldFiles {
     param (
         [string]$DirectoryPath,
-        [int]$DaysOld = 30
+        [int]$DaysOld = 30,
+        [string]$OldFilesReportPath = "OldFilesReport.csv"
     )
 
     if (-Not (Test-Path -Path $DirectoryPath)) {
@@ -38,6 +49,15 @@ function Remove-OldFiles {
         -not $_.PSIsContainer -and $_.LastWriteTime -lt $dateThreshold
     }
     if ($oldFiles) {
+        $report = $oldFiles | Select-Object FullName, Name, Length, LastWriteTime
+
+        try {
+            $report | Export-Csv -Path $OldFilesReportPath -NoTypeInformation -Append -Encoding UTF8
+            Write-Output "Reporte de archivos antiguos eliminados generado en: $OldFilesReportPath"
+        } catch {
+            Write-Error "No se pudo generar el reporte de archivos antiguos: $_"
+        }
+
         $oldFiles | ForEach-Object {
             Remove-Item -Path $_.FullName -Force -Verbose -ErrorAction SilentlyContinue
         }
@@ -60,9 +80,8 @@ function Clean-Directory {
     
     Write-Host "Iniciando limpieza en $DirectoryPath"
 
-#Comandos para la eliminación de archivos temporales o viejos
+    # Llamar a las funciones para eliminar archivos temporales y viejos
     Remove-TempFiles -DirectoryPath $DirectoryPath
-  
     Remove-OldFiles -DirectoryPath $DirectoryPath -DaysOld $DaysOld
 
     Write-Host "Limpieza completada en $DirectoryPath"
