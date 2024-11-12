@@ -29,8 +29,9 @@ show_menu() {
         echo "4. Configure Settings"
         echo "5. View Log"
         echo "6. Exit"
+        echo "7. Help"
         echo "====================================="
-        read -p "Select an option [1-6]: " choice
+        read -p "Select an option [1-7]: " choice
         case $choice in
             1) start_monitoring ;;
             2) stop_monitoring ;;
@@ -38,7 +39,8 @@ show_menu() {
             4) configure_settings ;;
             5) view_log ;;
             6) exit_script ;;
-            *) echo "Invalid option. Please select between 1-6."; sleep 2 ;;
+            7) get_help ;;
+            *) echo "Invalid option. Please select between 1-7."; sleep 2 ;;
         esac
     done
 }
@@ -95,11 +97,12 @@ generate_report() {
         echo "Log file does not exist. No data to report."
     else
         echo "Generating network connectivity report..."
-        echo "========================================="
-        echo "Report for Host: $HOST"
-        echo "Interval: $INTERVAL seconds"
-        echo "Log File: $LOGFILE"
-        echo "========================================="
+        REPORT_FILE="$HOME/network_report.txt"
+        echo "=========================================" > "$REPORT_FILE"
+        echo "Report for Host: $HOST" >> "$REPORT_FILE"
+        echo "Interval: $INTERVAL seconds" >> "$REPORT_FILE"
+        echo "Log File: $LOGFILE" >> "$REPORT_FILE"
+        echo "=========================================" >> "$REPORT_FILE"
 
         SUCCESS_COUNT=$(grep -c "SUCCESS" "$LOGFILE")
         FAILURE_COUNT=$(grep -c "FAILURE" "$LOGFILE")
@@ -113,10 +116,12 @@ generate_report() {
             FAILURE_PERCENT=0
         fi
 
-        echo "Total Pings: $TOTAL"
-        echo "Successful Pings: $SUCCESS_COUNT ($SUCCESS_PERCENT%)"
-        echo "Failed Pings: $FAILURE_COUNT ($FAILURE_PERCENT%)"
-        echo "========================================="
+        echo "Total Pings: $TOTAL" >> "$REPORT_FILE"
+        echo "Successful Pings: $SUCCESS_COUNT ($SUCCESS_PERCENT%)" >> "$REPORT_FILE"
+        echo "Failed Pings: $FAILURE_COUNT ($FAILURE_PERCENT%)" >> "$REPORT_FILE"
+        echo "=========================================" >> "$REPORT_FILE"
+
+        echo "Report saved to: $REPORT_FILE"
     fi
     pause
 }
@@ -146,6 +151,7 @@ configure_settings() {
                     echo "Invalid host input."
                 fi
                 ;;
+
             2)
                 read -p "Enter new interval in seconds: " new_interval
                 if [[ "$new_interval" =~ ^[0-9]+$ && "$new_interval" -gt 0 ]]; then
@@ -155,6 +161,7 @@ configure_settings() {
                     echo "Invalid interval input."
                 fi
                 ;;
+
             3)
                 read -p "Enter new log file path: " new_logfile
                 if [[ -n "$new_logfile" ]]; then
@@ -171,7 +178,7 @@ configure_settings() {
                 fi
                 ;;
             4) break ;;
-            *) echo "Invalid option."; ;;
+            *) echo "Invalid option." ;;
         esac
     done
     pause
@@ -209,6 +216,27 @@ pause() {
 error_handler() {
     echo "An unexpected error occurred on line $LINENO. Exiting."
     exit 1
+}
+
+# Function to display help information
+get_help() {
+    echo "Network Monitor Script Help"
+    echo "============================"
+    echo "This script monitors network connectivity by pinging a host periodically."
+    echo "You can configure the following settings:"
+    echo "1. Host to monitor"
+    echo "2. Ping interval (seconds)"
+    echo "3. Log file path"
+    echo ""
+    echo "Available options:"
+    echo "1. Start Monitoring - Starts monitoring the network."
+    echo "2. Stop Monitoring - Stops the ongoing monitoring."
+    echo "3. Generate Report - Generates a report based on the log file."
+    echo "4. Configure Settings - Allows you to change monitoring settings."
+    echo "5. View Log - Displays the content of the log file."
+    echo "6. Exit - Exits the script."
+    echo ""
+    pause
 }
 
 # Trap unexpected errors
