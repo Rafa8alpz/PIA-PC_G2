@@ -1,9 +1,11 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 function Get-HiddenFiles {
     param (
         [Parameter(Mandatory=$true)]
-        [string]$Path
+        [string]$Path,
+        [Parameter(Mandatory=$false)]
+        [string]$OutputPath = "HiddenFilesReport.csv"
     )
 
     if (-Not (Test-Path $Path)) {
@@ -16,6 +18,14 @@ function Get-HiddenFiles {
     if ($files.Count -eq 0) {
         Write-Output "No se encontraron archivos ocultos."
     } else {
-        $files | Select-Object FullName, Name, Length, LastWriteTime
+        $report = $files | Select-Object FullName, Name, Length, LastWriteTime
+
+        # Exportar a CSV
+        try {
+            $report | Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8
+            Write-Output "Reporte generado en: $OutputPath"
+        } catch {
+            Write-Error "No se pudo generar el reporte: $_"
+        }
     }
 }
