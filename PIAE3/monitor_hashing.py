@@ -1,71 +1,91 @@
-import os
-import hashlib
-import time
+import shodan
 import logging
+import re
+import csv
 
+SHODAN_API_KEY = 'IYOp1l2Ytx17Vze10anvLj5NqoOUY7pR'
 
-def calculate_hash(file_path):
-    """Calculate the SHA-512 hash of a file."""
+# Función para validar direcciones IP
+def validate_ip(ip_address):
+    """Valida si la entrada es una dirección IP válida."""
+    ip_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+    if ip_pattern.match(ip_address):
+        return True
+    else:
+        logging.error(f"Invalid IP address format: {ip_address}")
+        return False
+
+# Función para realizar la búsqueda en Shodan
+def search_shodan(query, report_path="ShodanSearchReport.csv"):
+    """Busca dispositivos conectados en Shodan usando una query (limitada por cuenta gratuita)."""
     try:
-        hash_function = hashlib.sha512()
-        with open(file_path, 'rb') as f:
-            while chunk := f.read(8192):
-                hash_function.update(chunk)
-        return hash_function.hexdigest()
-    except FileNotFoundError:
-        logging.error(f"File not found: {file_path}")
-        return None
-    except Exception as e:
-        logging.error(f"Error calculating hash for {file_path}: {e}")
-        return None
+        api = shodan.Shodan(SHODAN_API_KEY)
+        logging.info(f"Shodan search initiated with query: {query}")
 
-def log_change(file_path):
-    """Log a change to the specified file."""
-    logging.info(f'ALERT: {file_path} has changed!')
+        results = api.search(query, limit=100)
 
-def get_all_files(directory):
-    """Retrieve all files in the specified directory."""
-    files = []
-    try:
-        for root, dirs, filenames in os.walk(directory):
-            for filename in filenames:
-                files.append(os.path.join(root, filename))
-    except Exception as e:
-        logging.error(f"Error accessing directory {directory}: {e}")
-    return files
+        with open(report_path, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["IP", "Organization", "OS"])
 
-def monitor_directory(directory, interval=10):
-    """Monitor the specified directory for file changes."""
-    hashes = {}
+            for result in results['matches']:
+                ip = result['ip_str']
+                org = result.get('org', 'Unknown')
+                os = result.get('os', 'Unknown')
+                writer.writerow([ip, org, os])
+                logging.info(f"Device found: IP: {ip}, Organization: {org}, OS: {os}")
+        
+        logging.info(f"Report generated at {report_path}")
+        print(f"Report generated at {report_path}")
+        return results
     
-    # Get all files in the directory
-    files_to_monitor = get_all_files(directory)
-    
-    for file_path in files_to_monitor:
-        if os.path.exists(file_path):
-            hashes[file_path] = calculate_hash(file_path)
-
-    try:
-        while True:
-            time.sleep(interval)
-            for file_path in files_to_monitor:
-                if os.path.exists(file_path):
-                    current_hash = calculate_hash(file_path)
-                    if current_hash and current_hash != hashes.get(file_path):
-                        print(f'ALERT: {file_path} has changed!')
-                        log_change(file_path)
-                        hashes[file_path] = current_hash
-                else:
-                    print(f'ALERT: {file_path} has been deleted!')
-                    logging.warning(f'File deleted: {file_path}')
-                    hashes.pop(file_path, None)
-    except KeyboardInterrupt:
-        print("\nMonitoring stopped by user.")
-        logging.info("Monitoring stopped by user.")
+    except shodan.APIError as e:
+        logging.error(f"Shodan API error: {e}")
+        raise
     except Exception as e:
-        logging.error(f"An error occurred during monitoring: {e}")
+        logging.error(f"Unexpected error: {e}")
+        raise
 
-# Example usage
+def get_ip_info(ip_address, report_path="ShodanIPInfoReport.csv"):
+    """Obtiene información básica sobre una dirección IP específica usando la API de Shodan."""
+    if not validate_ip(ip_address):
+        raise ValueError("Invalid IP address format")
+    
+    try:
+        api = shodan.Shodan(SHODAN_API_KEY)
+        logging.info(f"Getting info for IP address: {ip_address}")
+        
+        host_info = api.host(ip_address)
+        
+        with open(report_path, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["IP", "Organization", "Operating System", "Ports"])  # Cabeceras
+            writer.writerow([
+                host_info['ip_str'],
+                host_info.get('org', 'Unknown'),
+                host_info.get('os', 'Unknown'),
+                host_info['ports']
+            ])
+        
+        logging.info(f"IP info report generated at {report_path}")
+        print(f"IP info report generated at {report_path}")
+        return host_info
+    
+    except shodan.APIError as e:
+        logging.error(f"Shodan API error: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        raise
+
+
 if __name__ == "__main__":
-    directory_to_monitor = r"D:\Programacion Clase"
-    monitor_directory(directory_to_monitor)
+    try:
+        query = "apache"
+        search_shodan(query)
+
+        ip = "187.195.139.72"
+        get_ip_info(ip)
+
+    except Exception as e:
+        logging.error(f"Error occurred during script execution: {e}")
