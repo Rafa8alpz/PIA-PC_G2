@@ -1,7 +1,7 @@
 import shodan
 import logging
 import re
-
+import csv
 
 # Definir tu clave API de Shodan
 SHODAN_API_KEY = 'IYOp1l2Ytx17Vze10anvLj5NqoOUY7pR'
@@ -19,7 +19,7 @@ def validate_ip(ip_address):
 
 
 # Función para realizar la búsqueda en Shodan (limitada a 1 página de resultados por cuenta gratuita)
-def search_shodan(query):
+def search_shodan(query, report_path="ShodanSearchReport.csv"):
     """Busca dispositivos conectados en Shodan usando una query (limitada por cuenta gratuita)."""
     try:
         api = shodan.Shodan(SHODAN_API_KEY)
@@ -28,14 +28,20 @@ def search_shodan(query):
         # Realizar la búsqueda con el límite de resultados por cuenta gratuita
         results = api.search(query, limit=100)
         
-        # Procesar y mostrar los resultados
-        logging.info(f"Search returned {len(results['matches'])} results (limited by free account)")
-        for result in results['matches']:
-            ip = result['ip_str']
-            org = result.get('org', 'Unknown')
-            os = result.get('os', 'Unknown')
-            print(f"IP: {ip}, Organization: {org}, OS: {os}")
-            logging.info(f"Device found: IP: {ip}, Organization: {org}, OS: {os}")
+        # Generar reporte CSV
+        with open(report_path, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["IP", "Organization", "OS"])  # Cabeceras
+
+            for result in results['matches']:
+                ip = result['ip_str']
+                org = result.get('org', 'Unknown')
+                os = result.get('os', 'Unknown')
+                writer.writerow([ip, org, os])
+                logging.info(f"Device found: IP: {ip}, Organization: {org}, OS: {os}")
+        
+        logging.info(f"Report generated at {report_path}")
+        print(f"Report generated at {report_path}")
         return results
     
     except shodan.APIError as e:
@@ -47,7 +53,7 @@ def search_shodan(query):
 
 
 # Función para obtener información sobre una IP específica
-def get_ip_info(ip_address):
+def get_ip_info(ip_address, report_path="ShodanIPInfoReport.csv"):
     """Obtiene información básica sobre una dirección IP específica usando la API de Shodan."""
     if not validate_ip(ip_address):
         raise ValueError("Invalid IP address format")
@@ -59,13 +65,19 @@ def get_ip_info(ip_address):
         # Obtener información de la IP (limitado en cuenta gratuita)
         host_info = api.host(ip_address)
         
-        # Mostrar la información
-        print(f"IP: {host_info['ip_str']}")
-        print(f"Organization: {host_info.get('org', 'Unknown')}")
-        print(f"Operating System: {host_info.get('os', 'Unknown')}")
-        print(f"Ports: {host_info['ports']}")
-        logging.info(f"IP info: {host_info}")
+        # Generar reporte CSV
+        with open(report_path, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["IP", "Organization", "Operating System", "Ports"])  # Cabeceras
+            writer.writerow([
+                host_info['ip_str'],
+                host_info.get('org', 'Unknown'),
+                host_info.get('os', 'Unknown'),
+                host_info['ports']
+            ])
         
+        logging.info(f"IP info report generated at {report_path}")
+        print(f"IP info report generated at {report_path}")
         return host_info
     
     except shodan.APIError as e:
